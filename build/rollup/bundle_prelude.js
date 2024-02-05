@@ -1,5 +1,9 @@
 /* eslint-disable */
 
+// GEOS
+/* global define */
+/* global globalThis */
+
 var maplibregl = {};
 var modules = {};
 function define(moduleName, _dependencies, moduleFactory) {
