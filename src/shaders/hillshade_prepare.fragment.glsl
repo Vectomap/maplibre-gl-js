@@ -5,16 +5,14 @@ precision highp float;
 uniform sampler2D u_image;
 in vec2 v_pos;
 
-
 uniform vec2 u_dimension;
 uniform float u_zoom;
-uniform vec4 u_unpack;
 
-float getElevation(vec2 coord, float bias) {
+float getElevation(vec2 coord) {
     // Convert encoded elevation value to meters
+
     vec4 data = texture(u_image, coord) * 255.0;
-    data.a = -1.0;
-    return dot(data, u_unpack) / 4.0;
+    return data.r * 256.0 + data.g + data.b / 256.0 - 32768.0;
 }
 
 void main() {
@@ -35,15 +33,15 @@ void main() {
     // |   |   |   |
     // +-----------+
 
-    float a = getElevation(v_pos + vec2(-epsilon.x, -epsilon.y), 0.0);
-    float b = getElevation(v_pos + vec2(0, -epsilon.y), 0.0);
-    float c = getElevation(v_pos + vec2(epsilon.x, -epsilon.y), 0.0);
-    float d = getElevation(v_pos + vec2(-epsilon.x, 0), 0.0);
-    float e = getElevation(v_pos, 0.0);
-    float f = getElevation(v_pos + vec2(epsilon.x, 0), 0.0);
-    float g = getElevation(v_pos + vec2(-epsilon.x, epsilon.y), 0.0);
-    float h = getElevation(v_pos + vec2(0, epsilon.y), 0.0);
-    float i = getElevation(v_pos + vec2(epsilon.x, epsilon.y), 0.0);
+    float a = getElevation(v_pos + vec2(-epsilon.x, -epsilon.y));
+    float b = getElevation(v_pos + vec2(0, -epsilon.y));
+    float c = getElevation(v_pos + vec2(epsilon.x, -epsilon.y));
+    float d = getElevation(v_pos + vec2(-epsilon.x, 0));
+    // float e = getElevation(v_pos);
+    float f = getElevation(v_pos + vec2(epsilon.x, 0));
+    float g = getElevation(v_pos + vec2(-epsilon.x, epsilon.y));
+    float h = getElevation(v_pos + vec2(0, epsilon.y));
+    float i = getElevation(v_pos + vec2(epsilon.x, epsilon.y));
 
     // Here we divide the x and y slopes by 8 * pixel size
     // where pixel size (aka meters/pixel) is:
@@ -57,13 +55,13 @@ void main() {
     // See nickidlugash's awesome breakdown for more info:
     // https://github.com/mapbox/mapbox-gl-js/pull/5286#discussion_r148419556
 
-    float exaggerationFactor = u_zoom < 2.0 ? 0.4 : u_zoom < 4.5 ? 0.35 : 0.3;
-    float exaggeration = u_zoom < 15.0 ? (u_zoom - 15.0) * exaggerationFactor : 0.0;
+    float exagFactor = u_zoom < 2.0 ? 0.4 : u_zoom < 4.5 ? 0.35 : 0.3;
+    float exag = u_zoom < 15.0 ? (u_zoom - 15.0) * exagFactor : 0.0;
 
     vec2 deriv = vec2(
         (c + f + f + i) - (a + d + d + g),
         (g + h + h + i) - (a + b + b + c)
-    ) / pow(2.0, exaggeration + (19.2562 - u_zoom));
+    ) / pow(2.0, exag + (19.2562 - u_zoom));
 
     fragColor = clamp(vec4(
         deriv.x / 2.0 + 0.5,

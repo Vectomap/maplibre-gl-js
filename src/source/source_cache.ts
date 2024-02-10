@@ -286,7 +286,10 @@ export class SourceCache extends Evented {
         tile.timeAdded = browser.now();
         if (previousState === 'expired') tile.refreshedUponExpiration = true;
         this._setTileReloadTimer(id, tile);
-        if (this.getSource().type === 'raster-dem' && tile.dem) this._backfillDEM(tile);
+
+        // GEOS - On ne calcule le backfill que pour les tiles 512
+        // if (this.getSource().type === 'raster-dem' && tile.dem) this._backfillDEM(tile);
+
         this._state.initializeTileState(tile, this.map ? this.map.painter : null);
 
         if (!tile.aborted) {

@@ -8,7 +8,6 @@ import {OverscaledTileID} from './tile_id';
 import {RasterTileSource} from './raster_tile_source';
 // ensure DEMData is registered for worker transfer on main thread:
 import '../data/dem_data';
-import type {DEMEncoding} from '../data/dem_data';
 
 import type {Source} from './source';
 import type {Dispatcher} from '../util/dispatcher';
@@ -18,7 +17,7 @@ import {isOffscreenCanvasDistorted} from '../util/offscreen_canvas_distorted';
 import {RGBAImage} from '../util/image';
 
 /**
- * A source containing raster DEM tiles (See the [Style Specification](https://maplibre.org/maplibre-style-spec/) for detailed documentation of options.)
+ * A source containing raster DEM tiles
  * This source can be used to show hillshading and 3D terrain
  *
  * @group Sources
@@ -34,26 +33,18 @@ import {RGBAImage} from '../util/image';
  * @see [3D Terrain](https://maplibre.org/maplibre-gl-js/docs/examples/3d-terrain/)
  */
 export class RasterDEMTileSource extends RasterTileSource implements Source {
-    encoding: DEMEncoding;
-    redFactor?: number;
-    greenFactor?: number;
-    blueFactor?: number;
-    baseShift?: number;
 
     constructor(id: string, options: RasterDEMSourceSpecification, dispatcher: Dispatcher, eventedParent: Evented) {
         super(id, options, dispatcher, eventedParent);
         this.type = 'raster-dem';
         this.maxzoom = 22;
         this._options = extend({type: 'raster-dem'}, options);
-        this.encoding = options.encoding || 'mapbox';
-        this.redFactor = options.redFactor;
-        this.greenFactor = options.greenFactor;
-        this.blueFactor = options.blueFactor;
-        this.baseShift = options.baseShift;
     }
 
     override async loadTile(tile: Tile): Promise<void> {
         const url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
+        // GEOS - ex: https://static1.geos.io/dsm/4/6/6.png
+
         const request = this.map._requestManager.transformRequest(url, ResourceType.Tile);
         tile.neighboringTiles = this._getNeighboringTiles(tile.tileID);
         tile.abortController = new AbortController();
@@ -75,12 +66,7 @@ export class RasterDEMTileSource extends RasterTileSource implements Source {
                     type: this.type,
                     uid: tile.uid,
                     source: this.id,
-                    rawImageData,
-                    encoding: this.encoding,
-                    redFactor: this.redFactor,
-                    greenFactor: this.greenFactor,
-                    blueFactor: this.blueFactor,
-                    baseShift: this.baseShift
+                    rawImageData
                 };
 
                 if (!tile.actor || tile.state === 'expired') {

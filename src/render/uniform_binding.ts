@@ -139,6 +139,23 @@ class UniformMatrix4f extends Uniform<mat4> {
     }
 }
 
+// GEOS
+
+const emptyArray4 = new Float32Array();
+class UniformArray4f extends Uniform<Float32Array> {
+    constructor(context: Context, location: WebGLUniformLocation) {
+        super(context, location);
+        this.current = emptyArray4;
+    }
+
+    // TO DO: tester la limite du nombre d'éléments (max 100)
+    // + pas de test de changement avant d'attribuer la valeur comme pour les autres Uniforms ?
+    set(v: Float32Array): void {
+      this.current = v;
+      this.gl.uniform4fv(this.location, v);
+    }
+}
+
 export {
     Uniform,
     Uniform1i,
@@ -147,7 +164,8 @@ export {
     Uniform3f,
     Uniform4f,
     UniformColor,
-    UniformMatrix4f
+    UniformMatrix4f,
+    UniformArray4f
 };
 
 /**

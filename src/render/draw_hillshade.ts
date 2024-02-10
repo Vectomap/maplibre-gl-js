@@ -14,6 +14,8 @@ import type {SourceCache} from '../source/source_cache';
 import type {HillshadeStyleLayer} from '../style/style_layer/hillshade_style_layer';
 import type {OverscaledTileID} from '../source/tile_id';
 
+// GEOS - Appellé à chaque mouvement de la map (plusieurs centaines de fois)
+
 export function drawHillshade(painter: Painter, sourceCache: SourceCache, layer: HillshadeStyleLayer, tileIDs: Array<OverscaledTileID>) {
     if (painter.renderPass !== 'offscreen' && painter.renderPass !== 'translucent') return;
 
@@ -26,6 +28,8 @@ export function drawHillshade(painter: Painter, sourceCache: SourceCache, layer:
         painter.stencilConfigForOverlap(tileIDs) : [{}, tileIDs];
 
     for (const coord of coords) {
+        // console.log('drawHillshade', painter.renderPass, coord.canonical)
+
         const tile = sourceCache.getTile(coord);
         if (typeof tile.needsHillshadePrepare !== 'undefined' && tile.needsHillshadePrepare && painter.renderPass === 'offscreen') {
             prepareHillshade(painter, tile, layer, depthMode, StencilMode.disabled, colorMode);
@@ -36,6 +40,8 @@ export function drawHillshade(painter: Painter, sourceCache: SourceCache, layer:
 
     context.viewport.set([0, 0, painter.width, painter.height]);
 }
+
+// Attention: appellé plusieurs milliers de fois à chaque refresh de la map !
 
 function renderHillshade(
     painter: Painter,
@@ -53,18 +59,29 @@ function renderHillshade(
     const program = painter.useProgram('hillshade');
     const terrainData = painter.style.map.terrain && painter.style.map.terrain.getTerrainData(coord);
 
+    // La texture 0 contient les deriv
     context.activeTexture.set(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, fbo.colorAttachment.get());
 
+    // GEOS - On recopie les élévations dans la texture 1
+    // Serait plus logique de mettre dans prepareHillshade, mais marche pas !
+    context.activeTexture.set(gl.TEXTURE1);
+    context.pixelStoreUnpackPremultiplyAlpha.set(false);
+    tile.demTexture.bind(gl.NEAREST, gl.CLAMP_TO_EDGE);
+
     const terrainCoord = terrainData ? coord : null;
+
     program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled,
         hillshadeUniformValues(painter, tile, layer, terrainCoord), terrainData, layer.id, painter.rasterBoundsBuffer,
         painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
 
 }
 
-// hillshade rendering is done in two steps. the prepare step first calculates the slope of the terrain in the x and y
+// hillshade rendering is done in two steps.
+// The prepare step first calculates the slope of the terrain in the x and y
 // directions for each pixel, and saves those values to a framebuffer texture in the r and g channels.
+
+// appellé chaque fois qu'on load de nouvelles tiles
 function prepareHillshade(
     painter: Painter,
     tile: Tile,

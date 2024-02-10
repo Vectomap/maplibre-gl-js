@@ -1474,6 +1474,12 @@ export abstract class Camera extends Evented {
                 delta < -180 ? 360 : 0;
     }
 
+    // GEOS - Query the current elevation of location in a RasterDEM
+    queryElevation(lngLat) {
+        console.log(lngLat)
+        return 123;
+    }
+
     /**
      * Query the current elevation of location. Returns `null` if terrain is not enabled. Elevation is in meters relative to mean sea-level.
      * @param lngLatLike - [x,y] or LngLat coordinates of the location

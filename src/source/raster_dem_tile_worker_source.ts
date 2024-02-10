@@ -7,6 +7,8 @@ import type {
 } from './worker_source';
 import {getImageData, isImageBitmap} from '../util/util';
 
+// GEOS - Charge une tile PNG
+
 export class RasterDEMTileWorkerSource {
     actor: Actor;
     loaded: {[_: string]: DEMData};
@@ -16,15 +18,24 @@ export class RasterDEMTileWorkerSource {
     }
 
     async loadTile(params: WorkerDEMTileParameters): Promise<DEMData | null> {
-        const {uid, encoding, rawImageData, redFactor, greenFactor, blueFactor, baseShift} = params;
-        const width = rawImageData.width + 2;
-        const height = rawImageData.height + 2;
+        const {uid, rawImageData} = params;
+        // const width = rawImageData.width + 2;
+        // const height = rawImageData.height + 2;
+
+        // GEOS - L'image peut être width * n si on stocke séparément le bâti et la végétation
+
+        const width = 514;
+        const height = 514;
+        const padding = rawImageData.height == 512 ? -1 : 0;
+
         const imagePixels: RGBAImage | ImageData = isImageBitmap(rawImageData) ?
-            new RGBAImage({width, height}, await getImageData(rawImageData, -1, -1, width, height)) :
+            new RGBAImage({width, height}, await getImageData(rawImageData, padding, padding, width, height)) :
             rawImageData;
-        const dem = new DEMData(uid, imagePixels, encoding, redFactor, greenFactor, blueFactor, baseShift);
+
+        const dem = new DEMData(uid, imagePixels);
         this.loaded = this.loaded || {};
         this.loaded[uid] = dem;
+
         return dem;
     }
 

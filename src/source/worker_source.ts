@@ -6,7 +6,6 @@ import type {OverscaledTileID} from './tile_id';
 import type {Bucket} from '../data/bucket';
 import type {FeatureIndex} from '../data/feature_index';
 import type {CollisionBoxArray} from '../data/array_types.g';
-import type {DEMEncoding} from '../data/dem_data';
 import type {StyleGlyph} from '../style/style_glyph';
 import type {StyleImage} from '../style/style_image';
 import type {PromoteIdSpecification} from '@maplibre/maplibre-gl-style-spec';
@@ -40,15 +39,10 @@ export type WorkerTileParameters = TileParameters & {
 };
 
 /**
- * The paremeters needed in order to load a DEM tile
+ * The parameters needed in order to load a DEM tile
  */
 export type WorkerDEMTileParameters = TileParameters & {
     rawImageData: RGBAImage | ImageBitmap | ImageData;
-    encoding: DEMEncoding;
-    redFactor: number;
-    greenFactor: number;
-    blueFactor: number;
-    baseShift: number;
 };
 
 /**

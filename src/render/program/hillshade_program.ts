@@ -6,7 +6,7 @@ import {
     Uniform2f,
     UniformColor,
     UniformMatrix4f,
-    Uniform4f
+    UniformArray4f
 } from '../uniform_binding';
 import {EXTENT} from '../../data/extent';
 import {MercatorCoordinate} from '../../geo/mercator_coordinate';
@@ -27,6 +27,27 @@ export type HillshadeUniformsType = {
     'u_shadow': UniformColor;
     'u_highlight': UniformColor;
     'u_accent': UniformColor;
+
+    'u_ramp': UniformArray4f;
+    'u_rampsize': Uniform1i;
+
+    'u_image_elev': Uniform1i;
+
+    'u_exag': Uniform1f;
+    'u_zenith': Uniform1f;
+    'u_azimuth': Uniform1f;
+
+    'u_mixslope': Uniform1f;
+    'u_mixshade': Uniform1f;
+    'u_mixcolor': Uniform1f;
+
+    'u_brightness': Uniform1f;
+    'u_contrast': Uniform1f;
+    'u_exposure': Uniform1f;
+
+    'u_saturation': Uniform1f;
+    'u_vibrance': Uniform1f;
+    'u_hue': Uniform1f;
 };
 
 export type HillshadePrepareUniformsType = {
@@ -34,7 +55,6 @@ export type HillshadePrepareUniformsType = {
     'u_image': Uniform1i;
     'u_dimension': Uniform2f;
     'u_zoom': Uniform1f;
-    'u_unpack': Uniform4f;
 };
 
 const hillshadeUniforms = (context: Context, locations: UniformLocations): HillshadeUniformsType => ({
@@ -44,16 +64,44 @@ const hillshadeUniforms = (context: Context, locations: UniformLocations): Hills
     'u_light': new Uniform2f(context, locations.u_light),
     'u_shadow': new UniformColor(context, locations.u_shadow),
     'u_highlight': new UniformColor(context, locations.u_highlight),
-    'u_accent': new UniformColor(context, locations.u_accent)
+    'u_accent': new UniformColor(context, locations.u_accent),
+
+    'u_image_elev': new Uniform1i(context, locations.u_image_elev),
+
+    'u_ramp': new UniformArray4f(context, locations.u_ramp),
+    'u_rampsize': new Uniform1i(context, locations.u_rampsize),
+
+    'u_exag': new Uniform1f(context, locations.u_exag),
+    'u_zenith': new Uniform1f(context, locations.u_zenith),
+    'u_azimuth': new Uniform1f(context, locations.u_azimuth),
+
+    'u_mixslope': new Uniform1f(context, locations.u_mixslope),
+    'u_mixshade': new Uniform1f(context, locations.u_mixshade),
+    'u_mixcolor': new Uniform1f(context, locations.u_mixcolor),
+
+    'u_brightness': new Uniform1f(context, locations.u_brightness),
+    'u_contrast': new Uniform1f(context, locations.u_contrast),
+    'u_exposure': new Uniform1f(context, locations.u_exposure),
+
+    'u_saturation': new Uniform1f(context, locations.u_saturation),
+    'u_vibrance': new Uniform1f(context, locations.u_vibrance),
+    'u_hue': new Uniform1f(context, locations.u_hue)
 });
 
 const hillshadePrepareUniforms = (context: Context, locations: UniformLocations): HillshadePrepareUniformsType => ({
     'u_matrix': new UniformMatrix4f(context, locations.u_matrix),
     'u_image': new Uniform1i(context, locations.u_image),
     'u_dimension': new Uniform2f(context, locations.u_dimension),
-    'u_zoom': new Uniform1f(context, locations.u_zoom),
-    'u_unpack': new Uniform4f(context, locations.u_unpack)
+    'u_zoom': new Uniform1f(context, locations.u_zoom)
 });
+
+// GEOS - Render
+
+// Passe ici des milliers de fois par seconde
+// -> A OPTIMISER: Ne pas faire de calculs, tester s'il y a eu du changement, passer le min de variables
+
+// console.log('Init render')
+
 
 const hillshadeUniformValues = (
     painter: Painter,
@@ -61,9 +109,14 @@ const hillshadeUniformValues = (
     layer: HillshadeStyleLayer,
     coord: OverscaledTileID
 ): UniformValues<HillshadeUniformsType> => {
+
     const shadow = layer.paint.get('hillshade-shadow-color');
     const highlight = layer.paint.get('hillshade-highlight-color');
     const accent = layer.paint.get('hillshade-accent-color');
+
+    // const ramp = [0.1, 0.1, 0.5, -5000.0, 0.607, 0.937, 0.949, 0.0, 0.4, 0.55, 0.3, 1.0, 0.9,  0.9, 0.6, 300.0, 0.6,  0.4, 0.3, 2000.0,1.0,  1.0, 1.0, 4000.0, 1.0, 1.0, 1.0, 20000.0];
+    const ramp = layer.paint.get('geos-ramp')['value']['value'];
+    // console.log('geos-ramp', ramp);
 
     let azimuthal = layer.paint.get('hillshade-illumination-direction') * (Math.PI / 180);
     // modify azimuthal angle by map rotation if light is anchored at the viewport
@@ -71,6 +124,7 @@ const hillshadeUniformValues = (
         azimuthal -= painter.transform.angle;
     }
     const align = !painter.options.moving;
+
     return {
         'u_matrix': coord ? coord.posMatrix : painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped(), align),
         'u_image': 0,
@@ -78,9 +132,34 @@ const hillshadeUniformValues = (
         'u_light': [layer.paint.get('hillshade-exaggeration'), azimuthal],
         'u_shadow': shadow,
         'u_highlight': highlight,
-        'u_accent': accent
+        'u_accent': accent,
+
+        'u_image_elev': 1,
+
+        'u_ramp': ramp,
+        'u_rampsize': (ramp.length / 4) - 1,
+
+        'u_exag': layer.paint.get('geos-exag'),
+        'u_zenith': layer.paint.get('geos-zenith'),
+        'u_azimuth': layer.paint.get('geos-azimuth'),
+
+        'u_mixslope': layer.paint.get('geos-mix-slope'),
+        'u_mixshade': layer.paint.get('geos-mix-shade'),
+        'u_mixcolor': layer.paint.get('geos-mix-color'),
+
+        'u_brightness': layer.paint.get('geos-brightness'),
+        'u_contrast': layer.paint.get('geos-contrast'),
+        'u_exposure': layer.paint.get('geos-exposure'),
+
+        'u_saturation': layer.paint.get('geos-saturation'),
+        'u_vibrance': layer.paint.get('geos-vibrance'),
+        'u_hue': layer.paint.get('geos-hue')
     };
 };
+
+
+// Prepare
+// Passe moins souvent que hillshadeUniformValues mais qd même conséquent
 
 const hillshadeUniformPrepareValues = (tileID: OverscaledTileID, dem: DEMData): UniformValues<HillshadePrepareUniformsType> => {
 
@@ -94,8 +173,7 @@ const hillshadeUniformPrepareValues = (tileID: OverscaledTileID, dem: DEMData): 
         'u_matrix': matrix,
         'u_image': 1,
         'u_dimension': [stride, stride],
-        'u_zoom': tileID.overscaledZ,
-        'u_unpack': dem.getUnpackVector()
+        'u_zoom': tileID.overscaledZ
     };
 };
 
