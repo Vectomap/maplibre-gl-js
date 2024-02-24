@@ -24,15 +24,19 @@ export class RasterDEMTileWorkerSource {
 
         // GEOS - L'image peut être width * n si on stocke séparément le bâti et la végétation
 
-        const width = 514;
-        const height = 514;
+        // Si le png fait 512, on ajoute une bordure de 1px
         const padding = rawImageData.height == 512 ? -1 : 0;
 
+        // ?? comprend pas pq on ne peut pas assigner directement imagePixels = RGBAImage()
         const imagePixels: RGBAImage | ImageData = isImageBitmap(rawImageData) ?
-            new RGBAImage({width, height}, await getImageData(rawImageData, padding, padding, width, height)) :
+            new RGBAImage({ width:514, height:514 }, await getImageData(rawImageData, padding, padding, 514, 514)) :
             rawImageData;
 
-        const dem = new DEMData(uid, imagePixels);
+        const imageStats: RGBAImage | ImageData = isImageBitmap(rawImageData) ?
+            new RGBAImage({ width:1, height:514 }, await getImageData(rawImageData, 514, 0, 1, 514)) :
+            rawImageData;
+
+        const dem = new DEMData(uid, imagePixels, imageStats);
         this.loaded = this.loaded || {};
         this.loaded[uid] = dem;
 

@@ -46,7 +46,10 @@ export class RasterDEMTileSource extends RasterTileSource implements Source {
         // GEOS - ex: https://static1.geos.io/dsm/4/6/6.png
 
         const request = this.map._requestManager.transformRequest(url, ResourceType.Tile);
-        tile.neighboringTiles = this._getNeighboringTiles(tile.tileID);
+        
+        // GEOS - plus nécessaire puisque plus de filling border
+        // tile.neighboringTiles = this._getNeighboringTiles(tile.tileID);
+
         tile.abortController = new AbortController();
         try {
             const response = await ImageRequest.getImage(request, tile.abortController, this.map._refreshExpiredTiles);
@@ -56,10 +59,14 @@ export class RasterDEMTileSource extends RasterTileSource implements Source {
                 return;
             }
             if (response && response.data) {
+
+                // Données brutes du PNG
                 const img = response.data;
+
                 if (this.map._refreshExpiredTiles && response.cacheControl && response.expires) {
                     tile.setExpiryData({cacheControl: response.cacheControl, expires: response.expires});
                 }
+
                 const transfer = isImageBitmap(img) && offscreenCanvasSupported();
                 const rawImageData = transfer ? img : await this.readImageNow(img);
                 const params = {

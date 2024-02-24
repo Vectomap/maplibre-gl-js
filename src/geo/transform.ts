@@ -28,6 +28,8 @@ export class Transform {
     width: number;
     height: number;
     angle: number;
+    elevMin: number;
+    elevMax: number;
     rotationMatrix: mat2;
     pixelsToGLUnits: [number, number];
     cameraToCenterDistance: number;
@@ -41,6 +43,7 @@ export class Transform {
     glCoordMatrix: mat4;
     labelPlaneMatrix: mat4;
     minElevationForCurrentTile: number;
+
     _fov: number;
     _pitch: number;
     _zoom: number;
@@ -84,6 +87,10 @@ export class Transform {
         this._posMatrixCache = {};
         this._alignedPosMatrixCache = {};
         this.minElevationForCurrentTile = 0;
+
+        // GEOS
+        this.elevMin = 0;
+        this.elevMax = 0;        
     }
 
     clone(): Transform {
@@ -101,6 +108,8 @@ export class Transform {
         this._elevation = that._elevation;
         this.minElevationForCurrentTile = that.minElevationForCurrentTile;
         this.zoom = that.zoom;
+        this.elevMin = that.elevMin;
+        this.elevMax = that.elevMax;
         this.angle = that.angle;
         this._fov = that._fov;
         this._pitch = that._pitch;

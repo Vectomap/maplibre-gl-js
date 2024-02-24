@@ -16,13 +16,14 @@ import {register} from '../util/web_worker_transfer';
  */
 
 // GEOS TO DO:
-// - Use of min/max values (déjà calculés), cfr. getMinMaxElevation(tileID)
+// - done - Use of min/max values (déjà calculés), cfr. getMinMaxElevation(tileID)
 // - Permettre de charger autre chose qu'un PNG, par ex. un fichier multi-couches
-// - La tile source devrait déjà contenir le 1px border pour éviter de le calculer ici
+// - done - La tile source devrait déjà contenir le 1px border pour éviter de le calculer ici
 
 export class DEMData {
     uid: string | number;
-    data: Uint32Array;
+    data: Uint8Array | Uint8ClampedArray;
+    stats: Uint8Array | Uint8ClampedArray;
     stride: number;
     dim: number;
     min: number;
@@ -32,17 +33,23 @@ export class DEMData {
      * Constructs a `DEMData` object
      * @param uid - the tile's unique id
      * @param data - RGBAImage data has uniform 1px padding on all sides: square tile edge size defines stride
+     * @param stats - GEOS 1px band containing stats values (min, max, mean, etc..)
      * and dim is calculated as stride - 2.
      */
-    constructor(uid: string | number, data: RGBAImage | ImageData) {
+    constructor(uid: string | number, data: RGBAImage | ImageData, stats: RGBAImage | ImageData) {
         this.uid = uid;
 
         // On suppose que les tiles sont carrées, on ne fait plus la vérif
         // if (data.height !== data.width) throw new RangeError('DEM tiles must be square');
 
         this.stride = data.height;
-        const dim = this.dim = data.height - 2;
-        this.data = new Uint32Array(data.data.buffer);
+        const dim = this.dim = data.height - 2;          // = 512
+
+        // data.data = Uint8Array, pq passer par une conv en Uint32 ?? -> Uint8ClampedArray to Uint8Array ?
+        // this.data = new Uint32Array(data.data.buffer);
+
+        this.data = data.data
+        this.stats = stats.data
 
         // in order to avoid flashing seams between tiles, here we are initially populating a 1px border of pixels around the image
         // with the data of the nearest pixel from the image. this data is eventually replaced when the tile's neighboring
@@ -71,9 +78,10 @@ export class DEMData {
 
         // calculate min/max values
         // on zappe pour l'instant pour la vitesse
+        /*
         this.min = Number.MAX_SAFE_INTEGER;
         this.max = Number.MIN_SAFE_INTEGER;
-        /*
+
         for (let x = 0; x < dim; x++) {
             for (let y = 0; y < dim; y++) {
                 const ele = this.get(x, y);
@@ -82,15 +90,26 @@ export class DEMData {
             }
         }
         */
+
+        // GEOS - on récupère les min/max depuis la bande stats
+        this.min = this.getstat(0);
+        this.max = this.getstat(1);
+    }
+
+    // GEOS - lis une valeur de la bande stat
+    getstat(y: number) {
+        const index = y * 4;
+        return (this.stats[index] * 65536.0 + this.stats[index + 1] * 256.0 + this.stats[index + 2] - 1100000.0) / 100.0;
     }
 
     // Semble ne servir que pour Terrain et le calc min/max
     get(x: number, y: number) {
-        const pixels = new Uint8Array(this.data.buffer);
+        // const pixels = new Uint8Array(this.data.buffer);
         const index = this._idx(x, y) * 4;
 
         // return this.unpack(pixels[index], pixels[index + 1], pixels[index + 2]);
-        return pixels[index] * 256.0 + pixels[index+1] + pixels[index+2] / 256.0 - 32768.0;
+        // return pixels[index] * 256.0 + pixels[index+1] + pixels[index+2] / 256.0 - 32768.0;
+        return this.data[index] * 256.0 + this.data[index+1] + this.data[index+2] / 256.0 - 32768.0;
     }
 
     getUnpackVector() {
@@ -104,15 +123,19 @@ export class DEMData {
     }
 
     // plus nécessaire
+    /*
     unpack(r: number, g: number, b: number) {
         return r * 256.0 + g + b / 256.0 - 32768.0;
     }
+    */
 
     getPixels() {
-        return new RGBAImage({width: this.stride, height: this.stride}, new Uint8Array(this.data.buffer));
+        // return new RGBAImage({width: this.stride, height: this.stride}, new Uint8Array(this.data.buffer));
+        return new RGBAImage({width: this.stride, height: this.stride}, this.data);
     }
 
     // Pas nécessaire avec tiles 514
+    /*
     backfillBorder(borderTile: DEMData, dx: number, dy: number) {
         if (this.dim !== borderTile.dim) throw new Error('dem dimension mismatch');
 
@@ -147,6 +170,7 @@ export class DEMData {
             }
         }
     }
+    */
 }
 
 register('DEMData', DEMData);

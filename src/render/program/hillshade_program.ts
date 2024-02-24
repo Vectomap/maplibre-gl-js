@@ -48,6 +48,11 @@ export type HillshadeUniformsType = {
     'u_saturation': Uniform1f;
     'u_vibrance': Uniform1f;
     'u_hue': Uniform1f;
+
+    'u_debugclass': Uniform1i;
+    'u_autoscale': Uniform1i;
+    'u_elevmin': Uniform1f;
+    'u_elevmax': Uniform1f;
 };
 
 export type HillshadePrepareUniformsType = {
@@ -85,7 +90,12 @@ const hillshadeUniforms = (context: Context, locations: UniformLocations): Hills
 
     'u_saturation': new Uniform1f(context, locations.u_saturation),
     'u_vibrance': new Uniform1f(context, locations.u_vibrance),
-    'u_hue': new Uniform1f(context, locations.u_hue)
+    'u_hue': new Uniform1f(context, locations.u_hue),
+
+    'u_debugclass': new Uniform1i(context, locations.u_debugclass),
+    'u_autoscale': new Uniform1i(context, locations.u_autoscale),
+    'u_elevmin': new Uniform1f(context, locations.u_elevmin),
+    'u_elevmax': new Uniform1f(context, locations.u_elevmax)
 });
 
 const hillshadePrepareUniforms = (context: Context, locations: UniformLocations): HillshadePrepareUniformsType => ({
@@ -153,7 +163,12 @@ const hillshadeUniformValues = (
 
         'u_saturation': layer.paint.get('geos-saturation'),
         'u_vibrance': layer.paint.get('geos-vibrance'),
-        'u_hue': layer.paint.get('geos-hue')
+        'u_hue': layer.paint.get('geos-hue'),
+
+        'u_debugclass': layer.paint.get('geos-debugclass'),
+        'u_autoscale': layer.paint.get('geos-autoscale'),
+        'u_elevmin': painter.transform.elevMin,
+        'u_elevmax': painter.transform.elevMax
     };
 };
 

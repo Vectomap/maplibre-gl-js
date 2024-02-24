@@ -223,9 +223,36 @@ export class SourceCache extends Evented {
 
     getRenderableIds(symbolLayer?: boolean): Array<string> {
         const renderables: Array<Tile> = [];
+
+        // GEOS
+        // TODO:
+        //   - trouver un autre endroit ? Passe ici des miliers de fois !
+        //   - ne tenir compte que des tiles au niveau le plus bas
+
+        var elevMin = 1000000;
+        var elevMax = -1000000;
+
         for (const id in this._tiles) {
-            if (this._isIdRenderable(id, symbolLayer)) renderables.push(this._tiles[id]);
+            if (this._isIdRenderable(id, symbolLayer)) {
+                const tile = this._tiles[id];
+                renderables.push(tile);
+
+                // GEOS - Si on a une tile rasterDEM, on adapte les elev min/max
+                if (tile.dem) {
+                    // console.log('raster min/max', tile.tileID.canonical, tile.dem.min, tile.dem.max)
+                    if (tile.dem.min < elevMin) elevMin = tile.dem.min
+                    if (tile.dem.max > elevMax) elevMax = tile.dem.max
+                }
+            }
         }
+
+        // GEOS - On sauve les min/max
+        if (elevMin != 1000000 && elevMax != -1000000) {
+            // console.log(elevMin, elevMax)
+            this.transform.elevMin = elevMin
+            this.transform.elevMax = elevMax
+        }
+        
         if (symbolLayer) {
             return renderables.sort((a_: Tile, b_: Tile) => {
                 const a = a_.tileID;
@@ -235,6 +262,7 @@ export class SourceCache extends Evented {
                 return a.overscaledZ - b.overscaledZ || rotatedB.y - rotatedA.y || rotatedB.x - rotatedA.x;
             }).map(tile => tile.tileID.key);
         }
+
         return renderables.map(tile => tile.tileID).sort(compareTileId).map(id => id.key);
     }
 
@@ -287,7 +315,7 @@ export class SourceCache extends Evented {
         if (previousState === 'expired') tile.refreshedUponExpiration = true;
         this._setTileReloadTimer(id, tile);
 
-        // GEOS - On ne calcule le backfill que pour les tiles 512
+        // GEOS - Plus nécessaire de calculer le backfill
         // if (this.getSource().type === 'raster-dem' && tile.dem) this._backfillDEM(tile);
 
         this._state.initializeTileState(tile, this.map ? this.map.painter : null);
@@ -300,6 +328,7 @@ export class SourceCache extends Evented {
     /**
     * For raster terrain source, backfill DEM to eliminate visible tile boundaries
     */
+/*
     _backfillDEM(tile: Tile) {
         const renderables = this.getRenderableIds();
         for (let i = 0; i < renderables.length; i++) {
@@ -337,6 +366,7 @@ export class SourceCache extends Evented {
                 tile.neighboringTiles[borderId].backfilled = true;
         }
     }
+*/
     /**
      * Get a specific tile by TileID
      */

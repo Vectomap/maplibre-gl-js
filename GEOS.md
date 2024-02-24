@@ -6,6 +6,8 @@
 src/data/dem_data.test.ts (remove)
 src/data/dem_data.ts
 
+src/geo/transform.ts
+
 src/render/program/hillshade_program.ts
 src/render/draw_hillshade.ts
 src/render/uniform_binding.ts

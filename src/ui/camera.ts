@@ -393,6 +393,10 @@ export abstract class Camera extends Evented {
      */
     getZoom(): number { return this.transform.zoom; }
 
+    // GEOS - min/max elevation of the current map
+    getElevMin(): number { return this.transform.elevMin; }
+    getElevMax(): number { return this.transform.elevMax; }
+
     /**
      * Sets the map's zoom level. Equivalent to `jumpTo({zoom: zoom})`.
      *
@@ -1472,12 +1476,6 @@ export abstract class Camera extends Evented {
         center.lng +=
             delta > 180 ? -360 :
                 delta < -180 ? 360 : 0;
-    }
-
-    // GEOS - Query the current elevation of location in a RasterDEM
-    queryElevation(lngLat) {
-        console.log(lngLat)
-        return 123;
     }
 
     /**

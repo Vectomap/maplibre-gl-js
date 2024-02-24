@@ -27,6 +27,12 @@ uniform float u_saturation;
 uniform float u_vibrance;
 uniform float u_hue;
 
+uniform int u_debugclass;
+
+uniform int u_autoscale;
+uniform float u_elevmin;
+uniform float u_elevmax;
+
 #define PI 3.141592653589793
 
 float zenithRad = (90.0 - u_zenith) * PI / 180.0;
@@ -196,34 +202,87 @@ void main() {
 
     vec3 final = vec3(mixc, mixc, mixc);
 
+    // Height
+
+    vec4 data = texture(u_image_elev, v_pos) * 255.0;
+    highp float v = (data.r * 65536.0 + data.g * 256.0 + data.b);
+    highp float height = (mod(v, 2000000.0) - 1100000.0) / 100.0;
+    int classe = int(v / 2000000.0);
+
+
+    // Debug - render classes
+    if (u_debugclass != 0) {
+        vec3 color = vec3(0.28, 0.46, 0.05);                    // ground
+        if (classe == 1)    color = vec3(0.07, 0.51, 0.65);     // ocean
+        if (classe == 2)    color = vec3(0.15, 0.1, 0.75);      // lake
+        if (classe == 3)    color = vec3(0.81, 0.11, 0.54);     // river
+
+        final = blendMultiply(final, color, 1.0);
+    }
+
     // Color ramp
-    if (u_mixcolor != 0.0) {
-        vec4 data = texture(u_image_elev, v_pos) * 255.0;
-        highp float height = ((data.r * 256.0 + data.g + data.b / 256.0) - 32768.0);
-        // int class = int(data.a);
+    // Warning: dynamic indexing arr[i] not allowed in GLSL
+    else if (u_mixcolor != 0.0) {
+        highp float rampmin = u_ramp[0].a;
+        highp float rampmax = 3500.0;
+
+        highp float range = rampmax - rampmin;
+        highp float newrange = u_elevmax - u_elevmin;
+        highp float coef = newrange / range;
+        highp float newmin = u_elevmin - rampmin;
 
         vec3 color = u_ramp[0].rgb;
+
         for (int n = 0; n < 99; n++) {
             if (n < u_rampsize) {
-                color = mix(
-                color,
-                u_ramp[n+1].rgb,
-                smoothstep(u_ramp[n].a, u_ramp[n+1].a, height)
-                );
+
+                if (u_autoscale != 0) {
+                    color = mix(
+                        color,
+                        u_ramp[n+1].rgb,
+                        smoothstep(
+                            (u_ramp[n].a + newmin - u_elevmin) * coef + u_elevmin,
+                            (u_ramp[n+1].a + newmin - u_elevmin) * coef + u_elevmin,
+                            height
+                        )
+                    );
+
+                } else {
+                    color = mix(
+                        color, 
+                        u_ramp[n+1].rgb, 
+                        smoothstep(
+                            u_ramp[n].a, 
+                            u_ramp[n+1].a,
+                            height
+                        )
+                    );
+                }
+
             } else {
                 break;
             }
         }
 
+        // Color adjustments
+        if (u_saturation != 0.0) color = adjustSaturation(color, u_saturation);
+        if (u_hue != 0.0)        color = adjustHue(color, u_hue);
+
         final = blendMultiply(final, color, u_mixcolor);
     }
+
+    // Classes
+    /*
+    if (classe >= 1) {
+        vec3 color = vec3(0.83, 0.55, 0.22);
+        final = blendMultiply(final, color, 1.0);
+    }
+    */
 
     // Image adjustments
     if (u_brightness != 0.0) final = adjustBrightness(final, u_brightness);
     if (u_contrast != 0.0)   final = adjustContrast(final, u_contrast);
     if (u_exposure != 0.0)   final = adjustExposure(final, u_exposure);
-    if (u_saturation != 0.0) final = adjustSaturation(final, u_saturation);
-    if (u_hue != 0.0)        final = adjustHue(final, u_hue);
 
     fragColor = vec4(final, 1.0);
 
