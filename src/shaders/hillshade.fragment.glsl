@@ -9,7 +9,6 @@ uniform vec4 u_highlight;
 uniform vec4 u_accent;
 
 uniform vec4 u_ramp[99];
-uniform int u_rampsize;
 
 uniform float u_exag;
 uniform float u_zenith;
@@ -208,20 +207,32 @@ void main() {
     highp float v = (data.r * 65536.0 + data.g * 256.0 + data.b);
     highp float height = (mod(v, 2000000.0) - 1100000.0) / 100.0;
     int classe = int(v / 2000000.0);
+    vec3 color;
 
 
     // Debug - render classes
     if (u_debugclass != 0) {
-        vec3 color = vec3(0.28, 0.46, 0.05);                    // ground
-        if (classe == 1)    color = vec3(0.07, 0.51, 0.65);     // ocean
-        if (classe == 2)    color = vec3(0.15, 0.1, 0.75);      // lake
-        if (classe == 3)    color = vec3(0.81, 0.11, 0.54);     // river
+        if (classe == 0)                                                // ground
+            color = vec3(0.8588, 0.8275, 0.7098);
+        else if (classe == 1)                                           // ocean
+            color = vec3(0.07, 0.51, 0.65);
+        else if (classe == 2)                                           // lake
+            color = vec3(0.1, 0.1, 0.8);
+        else if (classe == 3)                                           // river
+            color = vec3(0.81, 0.11, 0.54);
+        else if (classe == 4)                                           // vegetation
+            color = vec3(0.28, 0.46, 0.05);
+        else if (classe == 5)                                           // building
+            color = vec3(0.9, 0.6, 0.0);
+        else if (classe == 8)                                           // no data
+            color = vec3(0.99, 0.99, 0.99);
+        else                                                            // unknown/error
+            color = vec3(0.0, 0.0, 0.0);
 
         final = blendMultiply(final, color, 1.0);
     }
 
     // Color ramp
-    // Warning: dynamic indexing arr[i] not allowed in GLSL
     else if (u_mixcolor != 0.0) {
         highp float rampmin = u_ramp[0].a;
         highp float rampmax = 3500.0;
@@ -231,10 +242,13 @@ void main() {
         highp float coef = newrange / range;
         highp float newmin = u_elevmin - rampmin;
 
-        vec3 color = u_ramp[0].rgb;
+        color = u_ramp[0].rgb;
 
+        // Warning: dynamic indexing arr[i] not allowed in GLSL, we use this trick
+
+        int rampsize = int(u_ramp[0].r);
         for (int n = 0; n < 99; n++) {
-            if (n < u_rampsize) {
+            if (n < rampsize) {
 
                 if (u_autoscale != 0) {
                     color = mix(
@@ -267,17 +281,11 @@ void main() {
         // Color adjustments
         if (u_saturation != 0.0) color = adjustSaturation(color, u_saturation);
         if (u_hue != 0.0)        color = adjustHue(color, u_hue);
+        if (classe == 8)         color = vec3(0.99, 0.99, 0.99);
 
         final = blendMultiply(final, color, u_mixcolor);
     }
 
-    // Classes
-    /*
-    if (classe >= 1) {
-        vec3 color = vec3(0.83, 0.55, 0.22);
-        final = blendMultiply(final, color, 1.0);
-    }
-    */
 
     // Image adjustments
     if (u_brightness != 0.0) final = adjustBrightness(final, u_brightness);

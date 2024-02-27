@@ -29,7 +29,6 @@ export type HillshadeUniformsType = {
     'u_accent': UniformColor;
 
     'u_ramp': UniformArray4f;
-    'u_rampsize': Uniform1i;
 
     'u_image_elev': Uniform1i;
 
@@ -74,7 +73,6 @@ const hillshadeUniforms = (context: Context, locations: UniformLocations): Hills
     'u_image_elev': new Uniform1i(context, locations.u_image_elev),
 
     'u_ramp': new UniformArray4f(context, locations.u_ramp),
-    'u_rampsize': new Uniform1i(context, locations.u_rampsize),
 
     'u_exag': new Uniform1f(context, locations.u_exag),
     'u_zenith': new Uniform1f(context, locations.u_zenith),
@@ -147,7 +145,6 @@ const hillshadeUniformValues = (
         'u_image_elev': 1,
 
         'u_ramp': ramp,
-        'u_rampsize': (ramp.length / 4) - 1,
 
         'u_exag': layer.paint.get('geos-exag'),
         'u_zenith': layer.paint.get('geos-zenith'),
