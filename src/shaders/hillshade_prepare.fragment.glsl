@@ -8,14 +8,11 @@ in vec2 v_pos;
 uniform vec2 u_dimension;
 uniform float u_zoom;
 
-varying float u_calcmin;
-varying float u_calcmax;
-
 // Decode RGB elevation to meters
 float getElevation(vec2 coord) {
     vec4 data = texture(u_image, coord) * 255.0;
-    // return data.r * 256.0 + data.g + data.b / 256.0 - 32768.0;
 
+    // return data.r * 256.0 + data.g + data.b / 256.0 - 32768.0;
     return (mod(data.r * 65536.0 + data.g * 256.0 + data.b, 2000000.0) - 1100000.0) / 100.0;
 }
 
@@ -42,6 +39,9 @@ void main() {
     // -> on ne peut pas modifier un uniform depuis le shader
     // -> mais on peut écrire dans une texture
     // cfr. https://webglfundamentals.org/webgl/lessons/webgl-qna-determine-min-max-values-for-the-entire-image.html
+
+    // TODO:
+    // - transition entre terre et mer, avoir aspect + slope à 0 ??
 
     float a = getElevation(v_pos + vec2(-epsilon.x, -epsilon.y));
     float b = getElevation(v_pos + vec2(0, -epsilon.y));

@@ -1,6 +1,6 @@
 import {RGBAImage} from '../util/image';
 
-import {warnOnce} from '../util/util';
+// import {warnOnce} from '../util/util';
 import {register} from '../util/web_worker_transfer';
 
 /**
@@ -17,7 +17,7 @@ import {register} from '../util/web_worker_transfer';
 
 // GEOS TO DO:
 // - done - Use of min/max values (déjà calculés), cfr. getMinMaxElevation(tileID)
-// - Permettre de charger autre chose qu'un PNG, par ex. un fichier multi-couches
+// - Permettre de charger autre chose qu'un PNG, par ex. un fichier multi-couches ou un npy/npz
 // - done - La tile source devrait déjà contenir le 1px border pour éviter de le calculer ici
 
 export class DEMData {
