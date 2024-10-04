@@ -207,10 +207,10 @@ void main() {
     highp float v = (data.r * 65536.0 + data.g * 256.0 + data.b);
     highp float height = (mod(v, 2000000.0) - 1100000.0) / 100.0;
     int classe = int(v / 2000000.0);
-    vec3 color;
-
 
     // Debug - render classes
+    vec3 color;
+
     if (u_debugclass != 0) {
         if (classe == 0)                                                // ground
             color = vec3(0.8588, 0.8275, 0.7098);
